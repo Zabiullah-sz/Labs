@@ -1,6 +1,6 @@
 import boto3
 import time
-from utils.create_security_group import create_security_group
+from utils.create_security_group import create_security_group, ensure_security_group_rules
 from utils.ec2_instances_launcher import launch_ec2_instance
 from utils.create_key_pair import generate_key_pair
 from dotenv import load_dotenv
@@ -78,30 +78,26 @@ private_sg_id = create_security_group(
 print("Modifying rules")
 
 # Add rules to allow communication between private instances
-ec2.authorize_security_group_ingress(
-    GroupId=private_sg_id,
-    IpPermissions=[
-        {
-            'IpProtocol': 'tcp',
-            'FromPort': 3306,  # Example: MySQL
-            'ToPort': 3306,
-            'UserIdGroupPairs': [{'GroupId': private_sg_id}]  # Allow internal communication
-        }
-    ]
-)
+desired_private_rules = [
+    {
+        'IpProtocol': 'tcp',
+        'FromPort': 3306,  # Example: MySQL
+        'ToPort': 3306,
+        'UserIdGroupPairs': [{'GroupId': private_sg_id}]  # Allow internal communication
+    }
+]
+ensure_security_group_rules(ec2, private_sg_id, desired_private_rules)
 
 # Add rules to allow communication from public SG to private SG
-ec2.authorize_security_group_ingress(
-    GroupId=private_sg_id,
-    IpPermissions=[
-        {
-            'IpProtocol': 'tcp',
-            'FromPort': 3306,  # Example: MySQL
-            'ToPort': 3306,
-            'UserIdGroupPairs': [{'GroupId': public_sg_id}]  # Allow Gateway to access private group
-        }
-    ]
-)
+desired_public_rules = [
+    {
+        'IpProtocol': 'tcp',
+        'FromPort': 3306,  # Example: MySQL
+        'ToPort': 3306,
+        'UserIdGroupPairs': [{'GroupId': public_sg_id}]  # Allow Gateway to access private group
+    }
+]
+ensure_security_group_rules(ec2, private_sg_id, desired_public_rules)
 
 
 # Step 5: Launch Instances
@@ -120,16 +116,16 @@ gateway_instance = launch_ec2_instance(
 trusted_host_instance = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
-    security_group_id=public_sg_id,  # Security group restricts access to Gatekeeper
-    public_ip=True,  # No public IP
+    security_group_id=private_sg_id,  # Security group restricts access to Gatekeeper
+    public_ip=False,  # No public IP
     tag=("Name", "TrustedHost"),
 )
 
 proxy_instance = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
-    security_group_id=public_sg_id,  # Security group allows access from Trusted Host
-    public_ip=True,  # No public IP
+    security_group_id=private_sg_id,  # Security group allows access from Trusted Host
+    public_ip=False,  # No public IP
     tag=("Name", "Proxy"),
 )
 
@@ -145,8 +141,8 @@ manager_instance = launch_ec2_instance(
 worker_instances = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
-    security_group_id=public_sg_id,  # Security group allows access from Proxy
-    public_ip=True,  # No public IP
+    security_group_id=private_sg_id,  # Security group allows access from Proxy
+    public_ip=False,  # No public IP
     tag=("Name", "Worker"),
     user_data=get_user_data(),
     num_instances=2,

@@ -4,7 +4,7 @@ from utils.create_security_group import create_security_group, ensure_security_g
 from utils.ec2_instances_launcher import launch_ec2_instance
 from utils.create_key_pair import generate_key_pair
 from dotenv import load_dotenv
-from utils.user_data import get_user_data
+from utils.user_data import get_worker_user_data, get_manager_user_data, get_proxy_user_data, get_gatekeeper_user_data, get_trusted_host_user_data
 import os
 
 # Constants
@@ -53,6 +53,13 @@ public_sg_id = create_security_group(
             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]  # Allow HTTP
         },
         {
+            "IpProtocol": "tcp",
+            "FromPort": 3306,
+            "ToPort": 3306,
+            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
+        },
+
+        {
             'IpProtocol': 'tcp',
             'FromPort': 443,
             'ToPort': 443,
@@ -94,7 +101,7 @@ desired_public_rules = [
         'IpProtocol': 'tcp',
         'FromPort': 3306,  # Example: MySQL
         'ToPort': 3306,
-        'UserIdGroupPairs': [{'GroupId': public_sg_id}]  # Allow Gateway to access private group
+        'UserIdGroupPairs': [{'GroupId': public_sg_id}]  # Allow Gatekeeper to access private group
     }
 ]
 ensure_security_group_rules(ec2, private_sg_id, desired_public_rules)
@@ -103,53 +110,72 @@ ensure_security_group_rules(ec2, private_sg_id, desired_public_rules)
 # Step 5: Launch Instances
 print("Launching instances...")
 
-# Gateway with public IP
-gateway_instance = launch_ec2_instance(
-    ec2,
-    key_pair_name=KEY_PAIR_NAME,
-    security_group_id=public_sg_id,
-    public_ip=True,  # Assign public IP
-    tag=("Name", "Gateway"),
-)
-
-
-trusted_host_instance = launch_ec2_instance(
-    ec2,
-    key_pair_name="tp3-key-pair",
-    security_group_id=private_sg_id,  # Security group restricts access to Gatekeeper
-    public_ip=False,  # No public IP
-    tag=("Name", "TrustedHost"),
-)
-
-proxy_instance = launch_ec2_instance(
-    ec2,
-    key_pair_name="tp3-key-pair",
-    security_group_id=private_sg_id,  # Security group allows access from Trusted Host
-    public_ip=False,  # No public IP
-    tag=("Name", "Proxy"),
-)
-
 manager_instance = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
     security_group_id=public_sg_id,  # Security group allows access from Proxy
     public_ip=True,  # No public IP
-    user_data=get_user_data(),
+    user_data=get_manager_user_data(),
     tag=("Name", "Manager"),
 )
 
-worker_instances = launch_ec2_instance(
+manager_ip = manager_instance[0]["PrivateIpAddress"]
+
+# Launch Workers with unique server_ids
+worker_instances = []
+
+for i in range(2):  # Assuming 2 workers
+    server_id = i + 2  # Manager is 1; workers start from 2
+    worker = launch_ec2_instance(
+        ec2,
+        key_pair_name="tp3-key-pair",
+        security_group_id=public_sg_id,  # Security group allows access from Proxy
+        public_ip=True,  # Public IP for testing
+        user_data=get_worker_user_data(manager_ip, server_id),
+        tag=("Name", f"Worker-{server_id}"),
+    )
+    worker_instances.append(worker)
+
+# Extract worker private IPs
+worker_ips = [worker[0]["PrivateIpAddress"] for worker in worker_instances]
+worker1_ip, worker2_ip = worker_ips
+
+
+proxy_instance = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
-    security_group_id=private_sg_id,  # Security group allows access from Proxy
-    public_ip=False,  # No public IP
-    tag=("Name", "Worker"),
-    user_data=get_user_data(),
-    num_instances=2,
+    security_group_id=public_sg_id,  # Security group allows access from Trusted Host
+    public_ip=True,  # No public IP
+    user_data=get_proxy_user_data(manager_ip, worker1_ip, worker2_ip),
+    tag=("Name", "Proxy"),
+)
+
+proxy_ip = proxy_instance[0]["PrivateIpAddress"]
+
+trusted_host_instance = launch_ec2_instance(
+    ec2,
+    key_pair_name="tp3-key-pair",
+    security_group_id=public_sg_id,  # Security group restricts access to Gatekeeper
+    public_ip=True,  # No public IP
+    user_data=get_trusted_host_user_data(proxy_ip),
+    tag=("Name", "TrustedHost"),
+)
+
+trusted_host_ip = trusted_host_instance[0]["PrivateIpAddress"]
+
+
+# Gatekeeper with public IP
+gatekeeper_instance = launch_ec2_instance(
+    ec2,
+    key_pair_name=KEY_PAIR_NAME,
+    security_group_id=public_sg_id,
+    public_ip=True,  # Assign public IP
+    user_data=get_gatekeeper_user_data(trusted_host_ip),
+    tag=("Name", "Gatekeeper"),
 )
 
 # Output details
-print(f"Gateway: {gateway_instance}")
+print(f"Gatekeeper: {gatekeeper_instance}")
 print(f"Manager: {manager_instance}")
 print(f"Workers: {worker_instances}")
 print(f"Proxy: {proxy_instance}")
@@ -158,7 +184,7 @@ print(f"Proxy: {proxy_instance}")
 # Uncomment to clean up resources
 # print("\nCleaning up resources...")
 # instance_ids = [
-#     gateway_instance[0][0],
+#     gatekeeper_instance[0][0],
 #     manager_instance[0][0],
 #     *[w[0] for w in worker_instances],
 #     proxy_instance[0][0],

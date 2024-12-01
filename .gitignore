@@ -2,3 +2,4 @@
 .env
 *.pem
 /tp3/utils/__pycache__/
+__pycache__

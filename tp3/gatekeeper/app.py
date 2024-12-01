@@ -11,6 +11,9 @@ def validate_request():
     if "query" not in data:
         return jsonify({"error": "Invalid request"}), 400
 
+    if "type" not in data:
+        return jsonify({"error": "Invalid request: 'type' is required"}), 400
+
     response = requests.post(TRUSTED_HOST_URL, json=data)
     return response.json()
 

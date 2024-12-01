@@ -1,10 +1,14 @@
 import boto3
 import time
-from utils.create_security_group import create_security_group, ensure_security_group_rules
-from utils.ec2_instances_launcher import launch_ec2_instance
-from utils.create_key_pair import generate_key_pair
+from _utils.create_security_group import create_security_group, ensure_security_group_rules
+from _utils.ec2_instances_launcher import launch_ec2_instance
+from _utils.create_key_pair import generate_key_pair
 from dotenv import load_dotenv
-from utils.user_data import get_worker_user_data, get_manager_user_data, get_proxy_user_data, get_gatekeeper_user_data, get_trusted_host_user_data
+from gatekeeper.user_data import get_gatekeeper_user_data
+from trusted_host.user_data import get_trusted_host_user_data
+from manager.user_data import get_manager_user_data
+from workers.user_data import get_worker_user_data
+from proxy.user_data import get_proxy_user_data
 import os
 
 # Constants

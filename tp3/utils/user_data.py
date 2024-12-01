@@ -42,8 +42,6 @@ def get_manager_user_data():
     """
 
 
-
-
 def get_worker_user_data(manager_ip, server_id):
     return f"""#!/bin/bash
     exec > /var/log/worker_setup.log 2>&1
@@ -85,6 +83,13 @@ def get_worker_user_data(manager_ip, server_id):
 
 
 def get_proxy_user_data(manager_ip, worker1_ip, worker2_ip):
+    with open("utils/proxy_app.py", "r") as script_file:
+        proxy_app_content = script_file.read()
+        # Replace placeholders
+        proxy_app_content = proxy_app_content.replace("MANAGER_IP", manager_ip)
+        proxy_app_content = proxy_app_content.replace("WORKER1_IP", worker1_ip)
+        proxy_app_content = proxy_app_content.replace("WORKER2_IP", worker2_ip)
+
     return f"""#!/bin/bash
     exec > /var/log/proxy_setup.log 2>&1
 
@@ -92,56 +97,30 @@ def get_proxy_user_data(manager_ip, worker1_ip, worker2_ip):
     sudo apt-get update && sudo apt-get upgrade -y
     sudo apt-get install -y python3-pip
 
-    # Install Flask and dependencies
-    sudo pip3 install flask mysql-connector-python requests
 
-    # Create proxy application
-    cat <<EOF > /home/ubuntu/proxy_app.py
-    from flask import Flask, request, jsonify
-    import random
-    import mysql.connector
+    # i got an error without this, probably because flask was not installed correctly
+    sudo apt-get remove python3-flask -y
+    sudo pip3 install --ignore-installed flask mysql-connector-python requests --break-system-packages
 
-    app = Flask(__name__)
+    # Create directories
+    mkdir -p /home/ubuntu/proxy_app
 
-    MANAGER_DB = {{"host": "{manager_ip}", "user": "root", "password": "password123", "database": "sakila"}}
-    WORKER_DBS = [
-        {{"host": "{worker1_ip}", "user": "root", "password": "password123", "database": "sakila"}},
-        {{"host": "{worker2_ip}", "user": "root", "password": "password123", "database": "sakila"}}
-    ]
+    # Upload the Flask app
+    cat <<EOF > /home/ubuntu/proxy_app/proxy_app.py
+{proxy_app_content}
+EOF
 
-    def execute_query(db_config, query):
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
-        cursor.execute(query)
-        result = cursor.fetchall()
-        conn.close()
-        return result
-
-    @app.route('/query', methods=['POST'])
-    def route_request():
-        data = request.get_json()
-        query_type = data.get("type", "read").lower()
-        query = data.get("query", "")
-
-        if query_type == "write":
-            result = execute_query(MANAGER_DB, query)
-        elif query_type == "read":
-            worker_db = random.choice(WORKER_DBS)
-            result = execute_query(worker_db, query)
-        else:
-            return jsonify({{"error": "Invalid query type"}}), 400
-
-        return jsonify({{"result": result}})
-
-    if __name__ == '__main__':
-        app.run(host='0.0.0.0', port=5000)
-    EOF
-
-    nohup python3 /home/ubuntu/proxy_app.py &
+    # Start the Flask app
+    nohup python3 /home/ubuntu/proxy_app/proxy_app.py > /var/log/proxy_app.log 2>&1 &
     """
 
 
 def get_gatekeeper_user_data(trusted_host_ip):
+    with open("utils/gatekeeper_app.py", "r") as script_file:
+        gatekeeper_app_content = script_file.read()
+        # Replace placeholders
+        gatekeeper_app_content = gatekeeper_app_content.replace("TRUSTED_HOST_IP", trusted_host_ip)
+
     return f"""#!/bin/bash
     exec > /var/log/gatekeeper_setup.log 2>&1
 
@@ -149,36 +128,29 @@ def get_gatekeeper_user_data(trusted_host_ip):
     sudo apt-get update && sudo apt-get upgrade -y
     sudo apt-get install -y python3-pip
 
-    # Install Flask
-    sudo pip3 install flask requests
+    # i got an error without this, probably because flask was not installed correctly
+    sudo apt-get remove python3-flask -y
+    sudo pip3 install --ignore-installed flask mysql-connector-python requests --break-system-packages
 
-    # Create gatekeeper application
-    cat <<EOF > /home/ubuntu/gatekeeper_app.py
-    from flask import Flask, request, jsonify
-    import requests
+    # Create directories
+    mkdir -p /home/ubuntu/gatekeeper_app
 
-    app = Flask(__name__)
+    # Upload the Flask app
+    cat <<EOF > /home/ubuntu/gatekeeper_app/gatekeeper_app.py
+{gatekeeper_app_content}
+EOF
 
-    TRUSTED_HOST_URL = "http://{trusted_host_ip}:5000"
-
-    @app.route('/validate', methods=['POST'])
-    def validate_request():
-        data = request.get_json()
-        if "query" not in data:
-            return jsonify({{"error": "Invalid request"}}), 400
-
-        response = requests.post(TRUSTED_HOST_URL, json=data)
-        return response.json()
-
-    if __name__ == '__main__':
-        app.run(host='0.0.0.0', port=80)
-    EOF
-
-    nohup python3 /home/ubuntu/gatekeeper_app.py &
+    # Start the Flask app
+    nohup python3 /home/ubuntu/gatekeeper_app/gatekeeper_app.py &
     """
 
 
 def get_trusted_host_user_data(proxy_ip):
+    with open("utils/trusted_host_app.py", "r") as script_file:
+        trusted_host_app_content = script_file.read()
+        # Replace placeholders
+        trusted_host_app_content = trusted_host_app_content.replace("PROXY_IP", proxy_ip)
+
     return f"""#!/bin/bash
     exec > /var/log/trusted_host_setup.log 2>&1
 
@@ -186,27 +158,19 @@ def get_trusted_host_user_data(proxy_ip):
     sudo apt-get update && sudo apt-get upgrade -y
     sudo apt-get install -y python3-pip
 
-    # Install Flask
-    sudo pip3 install flask requests
+    # i got an error without this, probably because flask was not installed correctly
+    sudo apt-get remove python3-flask -y
+    sudo pip3 install --ignore-installed flask mysql-connector-python requests --break-system-packages
 
-    # Create trusted host application
-    cat <<EOF > /home/ubuntu/trusted_host_app.py
-    from flask import Flask, request, jsonify
-    import requests
+    # Create directories
+    mkdir -p /home/ubuntu/trusted_host_app
 
-    app = Flask(__name__)
+    # Upload the Flask app
+    cat <<EOF > /home/ubuntu/trusted_host_app/trusted_host_app.py
+{trusted_host_app_content}
+EOF
 
-    PROXY_URL = "http://{proxy_ip}:5000"
-
-    @app.route('/', methods=['POST'])
-    def forward_request():
-        data = request.get_json()
-        response = requests.post(PROXY_URL + "/query", json=data)
-        return response.json()
-
-    if __name__ == '__main__':
-        app.run(host='0.0.0.0', port=5000)
-    EOF
-
-    nohup python3 /home/ubuntu/trusted_host_app.py &
+    
+    # Start the Flask app
+    nohup python3 /home/ubuntu/trusted_host_app/trusted_host_app.py &
     """

@@ -52,13 +52,19 @@ public_sg_id = create_security_group(
             'ToPort': 80,
             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]  # Allow HTTP
         },
+
+        {
+            'IpProtocol': 'tcp',
+            'FromPort': 5000,
+            'ToPort': 5000,
+            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]  # Allow Flask apps
+        },  
         {
             "IpProtocol": "tcp",
             "FromPort": 3306,
             "ToPort": 3306,
             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
         },
-
         {
             'IpProtocol': 'tcp',
             'FromPort': 443,
@@ -74,12 +80,18 @@ public_sg_id = create_security_group(
     ]
 )
 
-
-
 private_sg_id = create_security_group(
     ec2_client=ec2,
     group_name="private-sg",
     group_description="Private Security Group",
+    rules=[
+        {
+            'IpProtocol': 'tcp',
+            'FromPort': 22,
+            'ToPort': 22,
+            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]  # Allow SSH
+        }
+    ]
 )
 
 print("Modifying rules")
@@ -101,7 +113,7 @@ desired_public_rules = [
         'IpProtocol': 'tcp',
         'FromPort': 3306,  # Example: MySQL
         'ToPort': 3306,
-        'UserIdGroupPairs': [{'GroupId': public_sg_id}]  # Allow Gatekeeper to access private group
+        'UserIdGroupPairs': [{'GroupId': public_sg_id}]  # Allow MYSQL from Gatekeeper to access private group
     }
 ]
 ensure_security_group_rules(ec2, private_sg_id, desired_public_rules)

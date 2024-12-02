@@ -4,3 +4,4 @@ paramiko
 matplotlib
 numpy
 scp
+requests

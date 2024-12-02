@@ -5,6 +5,7 @@ from _utils.ec2_instances_launcher import launch_ec2_instance
 from _utils.create_key_pair import generate_key_pair
 from dotenv import load_dotenv
 from gatekeeper.user_data import get_gatekeeper_user_data
+from _utils.benchmarking import run_benchmark
 from trusted_host.user_data import get_trusted_host_user_data
 from manager.user_data import get_manager_user_data
 from workers.user_data import get_worker_user_data
@@ -140,8 +141,8 @@ print("Launching instances...")
 manager_instance = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
-    security_group_id=private_sg_id,  # Security group allows access from Proxy
-    public_ip=False,  # No public IP
+    security_group_id=public_sg_id,  # Security group allows access from Proxy
+    public_ip=True,  # No public IP
     user_data=get_manager_user_data(),
     tag=("Name", "Manager"),
 )
@@ -156,8 +157,8 @@ for i in range(2):  # Assuming 2 workers
     worker = launch_ec2_instance(
         ec2,
         key_pair_name="tp3-key-pair",
-        security_group_id=private_sg_id,  # Security group allows access from Proxy
-        public_ip=False,  # Public IP for testing
+        security_group_id=public_sg_id,  # Security group allows access from Proxy
+        public_ip=True,  # Public IP for testing
         user_data=get_worker_user_data(manager_ip, server_id),
         tag=("Name", f"Worker-{server_id}"),
     )
@@ -182,8 +183,8 @@ proxy_ip = proxy_instance[0]["PrivateIpAddress"]
 trusted_host_instance = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
-    security_group_id=private_sg_id,  # Security group restricts access to Gatekeeper
-    public_ip=False,  # No public IP
+    security_group_id=public_sg_id,  # Security group restricts access to Gatekeeper
+    public_ip=True,  # No public IP
     user_data=get_trusted_host_user_data(proxy_ip),
     tag=("Name", "TrustedHost"),
 )
@@ -206,6 +207,18 @@ print(f"Gatekeeper: {gatekeeper_instance}")
 print(f"Manager: {manager_instance}")
 print(f"Workers: {worker_instances}")
 print(f"Proxy: {proxy_instance}")
+
+
+gateKeeper_PublicDns = gatekeeper_instance[0]["PublicDnsName"]
+
+# Fetch Gatekeeper public DNS
+gatekeeper_dns = gatekeeper_instance[0]["PublicDnsName"]
+gatekeeper_url = f"http://{gatekeeper_dns}:5000"
+
+# Call benchmarking function
+print("\nStarting benchmarking...")
+# run_benchmark(gatekeeper_url)
+
 
 
 # Step 6: Clean Up (Optional)

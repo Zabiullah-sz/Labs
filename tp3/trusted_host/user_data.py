@@ -23,7 +23,7 @@ def get_trusted_host_user_data(proxy_ip):
 {trusted_host_app_content}
 EOF
 
-    
+
     # Start the Flask app
     nohup python3 /home/ubuntu/trusted_host_app/trusted_host_app.py > /var/log/trusted_host_app.log 2>&1 &
     """

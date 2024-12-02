@@ -93,7 +93,7 @@ private_sg_id = create_security_group(
             'IpProtocol': 'tcp',
             'FromPort': 22,
             'ToPort': 22,
-            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]  # Allow SSH
+            'IpRanges': [{'CidrIp': '172.31.0.0/16'}]  # Allow SSH only from 172.31 subnet
         }
     ]
 )
@@ -101,7 +101,7 @@ private_sg_id = create_security_group(
 print("Modifying rules")
 
 # Add rules to allow communication between private instances
-desired_private_rules = [
+proxy_to_cluster_rules = [
     {
         'IpProtocol': 'tcp',
         'FromPort': 3306,  # Example: MySQL
@@ -109,18 +109,29 @@ desired_private_rules = [
         'UserIdGroupPairs': [{'GroupId': private_sg_id}]  # Allow internal communication
     }
 ]
-ensure_security_group_rules(ec2, private_sg_id, desired_private_rules)
+ensure_security_group_rules(ec2, private_sg_id, proxy_to_cluster_rules)
 
-# Add rules to allow communication from public SG to private SG
-desired_public_rules = [
+# Add rules to allow Gatekeeper to access Trusted Host on port 5000
+trusted_host_rules = [
     {
         'IpProtocol': 'tcp',
-        'FromPort': 3306,  # Example: MySQL
-        'ToPort': 3306,
-        'UserIdGroupPairs': [{'GroupId': public_sg_id}]  # Allow MYSQL from Gatekeeper to access private group
+        'FromPort': 5000,
+        'ToPort': 5000,
+        'IpRanges': [{'CidrIp': '172.31.0.0/16'}]  # Allow only private subnet communication
     }
 ]
-ensure_security_group_rules(ec2, private_sg_id, desired_public_rules)
+ensure_security_group_rules(ec2, private_sg_id, trusted_host_rules)
+
+# Add Proxy -> Trusted Host Communication
+proxy_to_trusted_rules = [
+    {
+        'IpProtocol': 'tcp',
+        'FromPort': 5000,
+        'ToPort': 5000,
+        'UserIdGroupPairs': [{'GroupId': private_sg_id}]
+    }
+]
+ensure_security_group_rules(ec2, private_sg_id, proxy_to_trusted_rules)
 
 
 # Step 5: Launch Instances
@@ -129,8 +140,8 @@ print("Launching instances...")
 manager_instance = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
-    security_group_id=public_sg_id,  # Security group allows access from Proxy
-    public_ip=True,  # No public IP
+    security_group_id=private_sg_id,  # Security group allows access from Proxy
+    public_ip=False,  # No public IP
     user_data=get_manager_user_data(),
     tag=("Name", "Manager"),
 )
@@ -145,8 +156,8 @@ for i in range(2):  # Assuming 2 workers
     worker = launch_ec2_instance(
         ec2,
         key_pair_name="tp3-key-pair",
-        security_group_id=public_sg_id,  # Security group allows access from Proxy
-        public_ip=True,  # Public IP for testing
+        security_group_id=private_sg_id,  # Security group allows access from Proxy
+        public_ip=False,  # Public IP for testing
         user_data=get_worker_user_data(manager_ip, server_id),
         tag=("Name", f"Worker-{server_id}"),
     )
@@ -160,8 +171,8 @@ worker1_ip, worker2_ip = worker_ips
 proxy_instance = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
-    security_group_id=public_sg_id,  # Security group allows access from Trusted Host
-    public_ip=True,  # No public IP
+    security_group_id=private_sg_id,  # Security group allows access from Trusted Host
+    public_ip=False,  # No public IP
     user_data=get_proxy_user_data(manager_ip, worker1_ip, worker2_ip),
     tag=("Name", "Proxy"),
 )
@@ -171,8 +182,8 @@ proxy_ip = proxy_instance[0]["PrivateIpAddress"]
 trusted_host_instance = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
-    security_group_id=public_sg_id,  # Security group restricts access to Gatekeeper
-    public_ip=True,  # No public IP
+    security_group_id=private_sg_id,  # Security group restricts access to Gatekeeper
+    public_ip=False,  # No public IP
     user_data=get_trusted_host_user_data(proxy_ip),
     tag=("Name", "TrustedHost"),
 )
@@ -195,6 +206,7 @@ print(f"Gatekeeper: {gatekeeper_instance}")
 print(f"Manager: {manager_instance}")
 print(f"Workers: {worker_instances}")
 print(f"Proxy: {proxy_instance}")
+
 
 # Step 6: Clean Up (Optional)
 # Uncomment to clean up resources

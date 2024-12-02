@@ -6,6 +6,7 @@ from _utils.create_key_pair import generate_key_pair
 from dotenv import load_dotenv
 from gatekeeper.user_data import get_gatekeeper_user_data
 from _utils.benchmarking import run_benchmark
+from _utils.run_command_instance import establish_ssh_via_bastion, run_command
 from trusted_host.user_data import get_trusted_host_user_data
 from manager.user_data import get_manager_user_data
 from workers.user_data import get_worker_user_data
@@ -135,14 +136,42 @@ proxy_to_trusted_rules = [
 ensure_security_group_rules(ec2, private_sg_id, proxy_to_trusted_rules)
 
 
+
+# Step 4.1: Launch Bastion Host
+bastion_instance = launch_ec2_instance(
+    ec2,
+    key_pair_name=KEY_PAIR_NAME,
+    security_group_id=public_sg_id,  # Public SG allows access from your local machine
+    public_ip=True,  # Bastion needs a public IP
+    tag=("Name", "BastionHost"),
+)
+
+bastion_ip = bastion_instance[0]["PublicDnsName"]
+print(f"Bastion Host Public IP: {bastion_ip}")
+
+# Adjust private security group to allow SSH from Bastion Host
+bastion_to_private_rules = [
+    {
+        'IpProtocol': 'tcp',
+        'FromPort': 22,
+        'ToPort': 22,
+        'UserIdGroupPairs': [{'GroupId': public_sg_id}]  # Allow SSH from Bastion SG
+    }
+]
+ensure_security_group_rules(ec2, private_sg_id, bastion_to_private_rules)
+
+
+
+
+
 # Step 5: Launch Instances
 print("Launching instances...")
 
 manager_instance = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
-    security_group_id=public_sg_id,  # Security group allows access from Proxy
-    public_ip=True,  # No public IP
+    security_group_id=private_sg_id,  # Security group allows access from Proxy
+    public_ip=False,  # No public IP
     user_data=get_manager_user_data(),
     tag=("Name", "Manager"),
 )
@@ -157,8 +186,8 @@ for i in range(2):  # Assuming 2 workers
     worker = launch_ec2_instance(
         ec2,
         key_pair_name="tp3-key-pair",
-        security_group_id=public_sg_id,  # Security group allows access from Proxy
-        public_ip=True,  # Public IP for testing
+        security_group_id=private_sg_id,  # Security group allows access from Proxy
+        public_ip=False,  # Public IP for testing
         user_data=get_worker_user_data(manager_ip, server_id),
         tag=("Name", f"Worker-{server_id}"),
     )
@@ -183,8 +212,8 @@ proxy_ip = proxy_instance[0]["PrivateIpAddress"]
 trusted_host_instance = launch_ec2_instance(
     ec2,
     key_pair_name="tp3-key-pair",
-    security_group_id=public_sg_id,  # Security group restricts access to Gatekeeper
-    public_ip=True,  # No public IP
+    security_group_id=private_sg_id,  # Security group restricts access to Gatekeeper
+    public_ip=False,  # No public IP
     user_data=get_trusted_host_user_data(proxy_ip),
     tag=("Name", "TrustedHost"),
 )
@@ -202,6 +231,23 @@ gatekeeper_instance = launch_ec2_instance(
     tag=("Name", "Gatekeeper"),
 )
 
+# sleep for 8 minutes to allow instances to be ready, make it with a loop so we know the progress after every minute
+for i in range(8):
+    print(f"Waiting for instances to be ready... {i+1}/8")
+    time.sleep(60)
+
+
+bastion_ip = bastion_instance[0]["PublicDnsName"]
+manager_ip = manager_instance[0]["PrivateIpAddress"]
+
+ssh = establish_ssh_via_bastion(bastion_ip, manager_ip, "temp/tp3-key-pair.pem")
+if ssh:
+    command = "echo 'Testing connection to private instance' > /home/ubuntu/test.txt"
+    output, error = run_command(ssh, command)
+    print(f"Output: {output}, Error: {error}")
+    ssh.close()
+
+
 # Output details
 print(f"Gatekeeper: {gatekeeper_instance}")
 print(f"Manager: {manager_instance}")
@@ -209,11 +255,11 @@ print(f"Workers: {worker_instances}")
 print(f"Proxy: {proxy_instance}")
 
 
-gateKeeper_PublicDns = gatekeeper_instance[0]["PublicDnsName"]
+# gateKeeper_PublicDns = gatekeeper_instance[0]["PublicDnsName"]
 
-# Fetch Gatekeeper public DNS
-gatekeeper_dns = gatekeeper_instance[0]["PublicDnsName"]
-gatekeeper_url = f"http://{gatekeeper_dns}:5000"
+# # Fetch Gatekeeper public DNS
+# gatekeeper_dns = gatekeeper_instance[0]["PublicDnsName"]
+# gatekeeper_url = f"http://{gatekeeper_dns}:5000"
 
 # Call benchmarking function
 print("\nStarting benchmarking...")

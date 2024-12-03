@@ -50,40 +50,33 @@ public_sg_id = create_security_group(
             'IpProtocol': 'tcp',
             'FromPort': 22,
             'ToPort': 22,
-            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]  # Allow SSH
+            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
         },
         {
             'IpProtocol': 'tcp',
             'FromPort': 80,
             'ToPort': 80,
-            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]  # Allow HTTP
+            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
         },
-
         {
             'IpProtocol': 'tcp',
             'FromPort': 5000,
             'ToPort': 5000,
-            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]  # Allow Flask apps
-        },  
-        {
-            "IpProtocol": "tcp",
-            "FromPort": 3306,
-            "ToPort": 3306,
             'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
         },
         {
             'IpProtocol': 'tcp',
             'FromPort': 443,
             'ToPort': 443,
-            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]  # Allow HTTPS
+            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
         },
         {
             'IpProtocol': 'icmp',
             'FromPort': -1,
             'ToPort': -1,
-            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]  # Allow ICMP
-        }
-    ]
+            'IpRanges': [{'CidrIp': '0.0.0.0/0'}]
+        },
+    ],
 )
 
 private_sg_id = create_security_group(
@@ -95,157 +88,188 @@ private_sg_id = create_security_group(
             'IpProtocol': 'tcp',
             'FromPort': 22,
             'ToPort': 22,
-            'IpRanges': [{'CidrIp': '172.31.0.0/16'}]  # Allow SSH only from 172.31 subnet
+            'IpRanges': [{'CidrIp': '172.31.0.0/16'}]
         }
-    ]
+    ],
 )
 
-print("Modifying rules")
+print("Modifying security group rules...")
 
-# Add rules to allow communication between private instances
+# Add communication rules
 proxy_to_cluster_rules = [
     {
         'IpProtocol': 'tcp',
-        'FromPort': 3306,  # Example: MySQL
+        'FromPort': 3306,
         'ToPort': 3306,
-        'UserIdGroupPairs': [{'GroupId': private_sg_id}]  # Allow internal communication
+        'UserIdGroupPairs': [{'GroupId': private_sg_id}]
     }
 ]
 ensure_security_group_rules(ec2, private_sg_id, proxy_to_cluster_rules)
 
-# Add rules to allow Gatekeeper to access Trusted Host on port 5000
 trusted_host_rules = [
     {
         'IpProtocol': 'tcp',
         'FromPort': 5000,
         'ToPort': 5000,
-        'IpRanges': [{'CidrIp': '172.31.0.0/16'}]  # Allow only private subnet communication
+        'IpRanges': [{'CidrIp': '172.31.0.0/16'}]
     }
 ]
 ensure_security_group_rules(ec2, private_sg_id, trusted_host_rules)
 
-# Add Proxy -> Trusted Host Communication
-proxy_to_trusted_rules = [
-    {
-        'IpProtocol': 'tcp',
-        'FromPort': 5000,
-        'ToPort': 5000,
-        'UserIdGroupPairs': [{'GroupId': private_sg_id}]
-    }
-]
-ensure_security_group_rules(ec2, private_sg_id, proxy_to_trusted_rules)
+# Step 4.1: Setup NAT Gateway
+def setup_nat_gateway(ec2):
+    # Retrieve default VPC
+    vpcs = ec2.describe_vpcs(Filters=[{'Name': 'isDefault', 'Values': ['true']}])
+    default_vpc_id = vpcs['Vpcs'][0]['VpcId']
+    subnets = ec2.describe_subnets(Filters=[{'Name': 'vpc-id', 'Values': [default_vpc_id]}])['Subnets']
+    public_subnet = subnets[0]['SubnetId']
+    private_subnet = subnets[1]['SubnetId']
+    print(f"Public Subnet: {public_subnet}, Private Subnet: {private_subnet}")
+
+    # Allocate Elastic IP for NAT Gateway
+    eip = ec2.allocate_address(Domain="vpc")
+    eip_allocation_id = eip['AllocationId']
+    print(f"Elastic IP: {eip['PublicIp']}")
+
+    # Create NAT Gateway
+    nat_gateway = ec2.create_nat_gateway(SubnetId=public_subnet, AllocationId=eip_allocation_id)
+    nat_gateway_id = nat_gateway['NatGateway']['NatGatewayId']
+    print(f"Created NAT Gateway: {nat_gateway_id}")
+
+    # Wait for NAT Gateway
+    ec2.get_waiter('nat_gateway_available').wait(NatGatewayIds=[nat_gateway_id])
+
+    # Configure private route table
+    private_route_table = ec2.create_route_table(VpcId=default_vpc_id)['RouteTable']['RouteTableId']
+    ec2.create_route(
+        RouteTableId=private_route_table,
+        DestinationCidrBlock="0.0.0.0/0",
+        NatGatewayId=nat_gateway_id,
+    )
+    ec2.associate_route_table(RouteTableId=private_route_table, SubnetId=private_subnet)
+    print(f"Private route table associated with: {private_subnet}")
+
+    return public_subnet, private_subnet
 
 
-
-# Step 4.1: Launch Bastion Host
-bastion_instance = launch_ec2_instance(
-    ec2,
-    key_pair_name=KEY_PAIR_NAME,
-    security_group_id=public_sg_id,  # Public SG allows access from your local machine
-    public_ip=True,  # Bastion needs a public IP
-    tag=("Name", "BastionHost"),
-)
-
-bastion_ip = bastion_instance[0]["PublicDnsName"]
-print(f"Bastion Host Public IP: {bastion_ip}")
-
-# Adjust private security group to allow SSH from Bastion Host
-bastion_to_private_rules = [
-    {
-        'IpProtocol': 'tcp',
-        'FromPort': 22,
-        'ToPort': 22,
-        'UserIdGroupPairs': [{'GroupId': public_sg_id}]  # Allow SSH from Bastion SG
-    }
-]
-ensure_security_group_rules(ec2, private_sg_id, bastion_to_private_rules)
-
-
-
-
+print("Setting up NAT Gateway...")
+public_subnet, private_subnet = setup_nat_gateway(ec2)
 
 # Step 5: Launch Instances
 print("Launching instances...")
 
+# Bastion Host
+bastion_instance = launch_ec2_instance(
+    ec2,
+    key_pair_name=KEY_PAIR_NAME,
+    security_group_id=public_sg_id,
+    public_ip=True,
+    tag=("Name", "BastionHost"),
+)
+
+# Manager Instance
 manager_instance = launch_ec2_instance(
     ec2,
-    key_pair_name="tp3-key-pair",
-    security_group_id=private_sg_id,  # Security group allows access from Proxy
-    public_ip=False,  # No public IP
+    key_pair_name=KEY_PAIR_NAME,
+    security_group_id=private_sg_id,
+    public_ip=False,
+    subnet_id=private_subnet,
     user_data=get_manager_user_data(),
     tag=("Name", "Manager"),
 )
 
 manager_ip = manager_instance[0]["PrivateIpAddress"]
 
-# Launch Workers with unique server_ids
+# Worker Instances
 worker_instances = []
-
-for i in range(2):  # Assuming 2 workers
-    server_id = i + 2  # Manager is 1; workers start from 2
+for i in range(2):
     worker = launch_ec2_instance(
         ec2,
-        key_pair_name="tp3-key-pair",
-        security_group_id=private_sg_id,  # Security group allows access from Proxy
-        public_ip=False,  # Public IP for testing
-        user_data=get_worker_user_data(manager_ip, server_id),
-        tag=("Name", f"Worker-{server_id}"),
+        key_pair_name=KEY_PAIR_NAME,
+        security_group_id=private_sg_id,
+        public_ip=False,
+        subnet_id=private_subnet,
+        user_data=get_worker_user_data(manager_ip, i + 2),
+        tag=("Name", f"Worker-{i + 2}"),
     )
     worker_instances.append(worker)
 
-# Extract worker private IPs
-worker_ips = [worker[0]["PrivateIpAddress"] for worker in worker_instances]
-worker1_ip, worker2_ip = worker_ips
-
-
+# Proxy Instance
 proxy_instance = launch_ec2_instance(
     ec2,
-    key_pair_name="tp3-key-pair",
-    security_group_id=private_sg_id,  # Security group allows access from Trusted Host
-    public_ip=False,  # No public IP
-    user_data=get_proxy_user_data(manager_ip, worker1_ip, worker2_ip),
+    key_pair_name=KEY_PAIR_NAME,
+    security_group_id=private_sg_id,
+    public_ip=False,
+    subnet_id=private_subnet,
+    user_data=get_proxy_user_data(manager_ip, worker_instances[0][0]["PrivateIpAddress"], worker_instances[1][0]["PrivateIpAddress"]),
     tag=("Name", "Proxy"),
 )
 
-proxy_ip = proxy_instance[0]["PrivateIpAddress"]
-
+# Trusted Host
 trusted_host_instance = launch_ec2_instance(
     ec2,
-    key_pair_name="tp3-key-pair",
-    security_group_id=private_sg_id,  # Security group restricts access to Gatekeeper
-    public_ip=False,  # No public IP
-    user_data=get_trusted_host_user_data(proxy_ip),
+    key_pair_name=KEY_PAIR_NAME,
+    security_group_id=private_sg_id,
+    public_ip=False,
+    subnet_id=private_subnet,
+    user_data=get_trusted_host_user_data(proxy_instance[0]["PrivateIpAddress"]),
     tag=("Name", "TrustedHost"),
 )
 
-trusted_host_ip = trusted_host_instance[0]["PrivateIpAddress"]
-
-
-# Gatekeeper with public IP
+# Gatekeeper
 gatekeeper_instance = launch_ec2_instance(
     ec2,
     key_pair_name=KEY_PAIR_NAME,
     security_group_id=public_sg_id,
-    public_ip=True,  # Assign public IP
-    user_data=get_gatekeeper_user_data(trusted_host_ip),
+    public_ip=True,
+    subnet_id=public_subnet,
+    user_data=get_gatekeeper_user_data(trusted_host_instance[0]["PrivateIpAddress"]),
     tag=("Name", "Gatekeeper"),
 )
 
-# sleep for 8 minutes to allow instances to be ready, make it with a loop so we know the progress after every minute
-for i in range(8):
+print("All instances launched.")
+
+
+# sleep for 4 minutes to allow instances to be ready, make it with a loop so we know the progress after every minute
+for i in range(4):
     print(f"Waiting for instances to be ready... {i+1}/8")
     time.sleep(60)
 
 
 bastion_ip = bastion_instance[0]["PublicDnsName"]
-manager_ip = manager_instance[0]["PrivateIpAddress"]
+proxy_ip = proxy_instance[0]["PrivateIpAddress"]
 
-ssh = establish_ssh_via_bastion(bastion_ip, manager_ip, "temp/tp3-key-pair.pem")
+ssh = establish_ssh_via_bastion(bastion_ip, proxy_ip, "temp/tp3-key-pair.pem")
+
 if ssh:
-    command = "echo 'Testing connection to private instance' > /home/ubuntu/test.txt"
+    # Define the remote log file paths and the local destination directory
+    log_files = ["/var/log/proxy_app.log", "/var/log/proxy_setup.log"]
+    local_log_dir = "logs"
+
+    # Ensure the local directory exists
+    os.makedirs(local_log_dir, exist_ok=True)
+
+    for log_file in log_files:
+        # Use SCP to fetch the log file
+        local_file_path = os.path.join(local_log_dir, os.path.basename(log_file))
+        try:
+            print(f"Retrieving {log_file} from proxy...")
+            sftp = ssh.open_sftp()
+            sftp.get(log_file, local_file_path)
+            sftp.close()
+            print(f"Successfully retrieved {log_file} to {local_file_path}")
+        except Exception as e:
+            print(f"Error retrieving {log_file}: {e}")
+    
+    # Optionally, test the connection
+    command = "echo 'Testing connection to proxy instance' > /home/ubuntu/test.txt"
     output, error = run_command(ssh, command)
     print(f"Output: {output}, Error: {error}")
+
+    # Close the SSH connection
     ssh.close()
+else:
+    print("Failed to establish SSH connection to the proxy.")
 
 
 # Output details

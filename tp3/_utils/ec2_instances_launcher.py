@@ -6,6 +6,7 @@ def launch_ec2_instance(ec2,
                         image_id="ami-0e86e20dae9224db8",
                         public_ip=False,
                         user_data="",
+                        subnet_id=None,  # Add subnet_id as a parameter
                         tag=None):
     """
     Launch EC2 instances and return their details.
@@ -23,9 +24,13 @@ def launch_ec2_instance(ec2,
         'NetworkInterfaces': [{
             'AssociatePublicIpAddress': public_ip,
             'DeviceIndex': 0,
-            'Groups': [security_group_id]
+            'Groups': [security_group_id],
         }],
     }
+
+    # Add subnet_id to the NetworkInterfaces if specified
+    if subnet_id:
+        instance_params['NetworkInterfaces'][0]['SubnetId'] = subnet_id
 
     if tag is not None:
         instance_params["TagSpecifications"] = [

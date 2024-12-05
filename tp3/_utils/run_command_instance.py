@@ -44,6 +44,21 @@ def run_command(ssh, command):
         print(f"SSHException occurred while executing the command: {e}")
         return None, str(e)
     
+def generate_iptables_command(source_ip, port=5000):
+    """
+    Generate iptables rules to allow traffic only from a specific source IP and block all others.
+    """
+    return f"""
+
+        sudo iptables -F  # Flush existing rules
+        sudo iptables -A INPUT -p tcp --dport {port} -s {source_ip} -j ACCEPT
+        sudo iptables -A INPUT -p tcp --dport 5000 -j DROP  # Drop all other traffic on port 5000
+        sudo iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT  # Allow established connections
+        sudo netfilter-persistent save
+
+
+    """
+    
 
 def establish_ssh_via_bastion(bastion_ip, private_ip, key_pair_path, retries=5):
     bastion_ssh = paramiko.SSHClient()

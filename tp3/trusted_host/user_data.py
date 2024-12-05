@@ -11,6 +11,14 @@ def get_trusted_host_user_data(proxy_ip):
     sudo apt-get update && sudo apt-get upgrade -y
     sudo apt-get install -y python3-pip
 
+    # Pre-configure answers for iptables-persistent to avoid prompts
+    echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+    echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+
+    # Install packages non-interactively
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip iptables-persistent netfilter-persistent
+
+
     # i got an error without this, probably because flask was not installed correctly
     sudo apt-get remove python3-flask -y
     sudo pip3 install --ignore-installed flask mysql-connector-python requests --break-system-packages

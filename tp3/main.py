@@ -6,7 +6,7 @@ from _utils.create_key_pair import generate_key_pair
 from dotenv import load_dotenv
 from gatekeeper.user_data import get_gatekeeper_user_data
 from _utils.benchmarking import run_benchmark
-from _utils.run_command_instance import establish_ssh_via_bastion, run_command
+from _utils.run_command_instance import establish_ssh_via_bastion, generate_iptables_command, run_command
 from trusted_host.user_data import get_trusted_host_user_data
 from manager.user_data import get_manager_user_data
 from workers.user_data import get_worker_user_data
@@ -126,28 +126,60 @@ def setup_nat_gateway(ec2):
     private_subnet = subnets[1]['SubnetId']
     print(f"Public Subnet: {public_subnet}, Private Subnet: {private_subnet}")
 
-    # Allocate Elastic IP for NAT Gateway
-    eip = ec2.allocate_address(Domain="vpc")
-    eip_allocation_id = eip['AllocationId']
-    print(f"Elastic IP: {eip['PublicIp']}")
+    # Check if NAT Gateway already exists
+    existing_nat_gateways = ec2.describe_nat_gateways(
+        Filters=[{'Name': 'vpc-id', 'Values': [default_vpc_id]}]
+    )['NatGateways']
+    if existing_nat_gateways:
+        nat_gateway_id = existing_nat_gateways[0]['NatGatewayId']
+        print(f"Using existing NAT Gateway: {nat_gateway_id}")
+    else:
+        # Allocate Elastic IP for NAT Gateway
+        eip = ec2.allocate_address(Domain="vpc")
+        eip_allocation_id = eip['AllocationId']
+        print(f"Elastic IP: {eip['PublicIp']}")
 
-    # Create NAT Gateway
-    nat_gateway = ec2.create_nat_gateway(SubnetId=public_subnet, AllocationId=eip_allocation_id)
-    nat_gateway_id = nat_gateway['NatGateway']['NatGatewayId']
-    print(f"Created NAT Gateway: {nat_gateway_id}")
+        # Create NAT Gateway
+        nat_gateway = ec2.create_nat_gateway(SubnetId=public_subnet, AllocationId=eip_allocation_id)
+        nat_gateway_id = nat_gateway['NatGateway']['NatGatewayId']
+        print(f"Created NAT Gateway: {nat_gateway_id}")
 
-    # Wait for NAT Gateway
-    ec2.get_waiter('nat_gateway_available').wait(NatGatewayIds=[nat_gateway_id])
+        # Wait for NAT Gateway
+        ec2.get_waiter('nat_gateway_available').wait(NatGatewayIds=[nat_gateway_id])
 
-    # Configure private route table
-    private_route_table = ec2.create_route_table(VpcId=default_vpc_id)['RouteTable']['RouteTableId']
-    ec2.create_route(
-        RouteTableId=private_route_table,
-        DestinationCidrBlock="0.0.0.0/0",
-        NatGatewayId=nat_gateway_id,
-    )
-    ec2.associate_route_table(RouteTableId=private_route_table, SubnetId=private_subnet)
-    print(f"Private route table associated with: {private_subnet}")
+    # Check if route table exists for the private subnet
+    route_tables = ec2.describe_route_tables(
+        Filters=[{'Name': 'vpc-id', 'Values': [default_vpc_id]}]
+    )['RouteTables']
+    private_route_table = None
+    for route_table in route_tables:
+        for association in route_table.get('Associations', []):
+            if association.get('SubnetId') == private_subnet:
+                private_route_table = route_table['RouteTableId']
+                print(f"Using existing route table: {private_route_table}")
+                break
+        if private_route_table:
+            break
+
+    # If no route table exists, create one
+    if not private_route_table:
+        private_route_table = ec2.create_route_table(VpcId=default_vpc_id)['RouteTable']['RouteTableId']
+        ec2.create_route(
+            RouteTableId=private_route_table,
+            DestinationCidrBlock="0.0.0.0/0",
+            NatGatewayId=nat_gateway_id,
+        )
+        print(f"Created and updated route table: {private_route_table}")
+
+    # Associate route table with private subnet if not already associated
+    try:
+        ec2.associate_route_table(RouteTableId=private_route_table, SubnetId=private_subnet)
+        print(f"Associated route table {private_route_table} with private subnet {private_subnet}")
+    except ec2.exceptions.ClientError as e:
+        if "Resource.AlreadyAssociated" in str(e):
+            print(f"Route table {private_route_table} is already associated with subnet {private_subnet}")
+        else:
+            raise e
 
     return public_subnet, private_subnet
 
@@ -235,31 +267,69 @@ for i in range(4):
     print(f"Waiting for instances to be ready... {i+1}/8")
     time.sleep(60)
 
+# Send iptables commands to each private instance
+instances_and_preceding_ips = [
+    (trusted_host_instance[0]["PrivateIpAddress"], gatekeeper_instance[0]["PrivateIpAddress"]),  # Trusted Host
+    (proxy_instance[0]["PrivateIpAddress"], trusted_host_instance[0]["PrivateIpAddress"]),      # Proxy
+]
 
+# Add manager and workers to the list
+for worker in worker_instances:
+    worker_ip = worker[0]["PrivateIpAddress"]
+    instances_and_preceding_ips.append((worker_ip, proxy_instance[0]["PrivateIpAddress"]))     # Cluster instances
+
+verification_command = "sudo iptables -L -v -n"
 bastion_ip = bastion_instance[0]["PublicDnsName"]
 proxy_ip = proxy_instance[0]["PrivateIpAddress"]
+
+print("Configuring iptables for private instances...")
+for instance_ip, preceding_ip in instances_and_preceding_ips:
+    iptables_command = generate_iptables_command(preceding_ip)
+    ssh = establish_ssh_via_bastion(bastion_ip, instance_ip, "temp/tp3-key-pair.pem")
+    if ssh:
+        print(f"Configuring iptables for instance {instance_ip} to accept traffic only from {preceding_ip}...")
+        output, error = run_command(ssh, iptables_command)
+        print(f"Verifying iptables rules on instance {instance_ip}...")
+        output2, error = run_command(ssh, verification_command)
+        if error:
+            print(f"Error configuring iptables on {instance_ip}: {error}")
+        else:
+            print(f"Successfully configured iptables on {instance_ip}")
+            print(f"iptables rules on {instance_ip}:\n{output2}")
+        ssh.close()
+    else:
+        print(f"Failed to connect to instance {instance_ip} via Bastion Host.")
+
+gatekeeper_url = f"http://{gatekeeper_instance[0]['PublicDnsName']}:5000"
+run_benchmark(gatekeeper_url)
+
+time.sleep(25)
 
 ssh = establish_ssh_via_bastion(bastion_ip, proxy_ip, "temp/tp3-key-pair.pem")
 
 if ssh:
-    # Define the remote log file paths and the local destination directory
-    log_files = ["/var/log/proxy_app.log", "/var/log/proxy_setup.log"]
-    local_log_dir = "logs"
+    # Define the remote file paths (logs and benchmark file) and the local destination directory
+    remote_files = [
+        "/var/log/proxy_app.log",
+        "/var/log/proxy_setup.log",
+        "/tmp/benchmark_proxy_result.txt"  # Benchmark file path
+    ]
+    local_dir = "logs_and_benchmark"
 
     # Ensure the local directory exists
-    os.makedirs(local_log_dir, exist_ok=True)
+    os.makedirs(local_dir, exist_ok=True)
 
-    for log_file in log_files:
-        # Use SCP to fetch the log file
-        local_file_path = os.path.join(local_log_dir, os.path.basename(log_file))
+    for remote_file in remote_files:
+        # Use SCP to fetch the file
+        local_file_path = os.path.join(local_dir, os.path.basename(remote_file))
         try:
-            print(f"Retrieving {log_file} from proxy...")
+            print(f"Retrieving {remote_file} from proxy...")
             sftp = ssh.open_sftp()
-            sftp.get(log_file, local_file_path)
+            sftp.get(remote_file, local_file_path)
             sftp.close()
-            print(f"Successfully retrieved {log_file} to {local_file_path}")
+            print(f"Successfully retrieved {remote_file} to {local_file_path}")
         except Exception as e:
-            print(f"Error retrieving {log_file}: {e}")
+            print(f"Error retrieving {remote_file}: {e}")
     
     # Optionally, test the connection
     command = "echo 'Testing connection to proxy instance' > /home/ubuntu/test.txt"
@@ -270,6 +340,7 @@ if ssh:
     ssh.close()
 else:
     print("Failed to establish SSH connection to the proxy.")
+
 
 
 # Output details

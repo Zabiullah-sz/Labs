@@ -8,6 +8,13 @@ def get_manager_user_data():
     # Install necessary packages
     sudo apt-get install -y mysql-server wget sysbench python3-pip
 
+    # Pre-configure answers for iptables-persistent to avoid prompts
+    echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+    echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+
+    # Install packages non-interactively
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip iptables-persistent netfilter-persistent
+
     # Configure MySQL to listen on all IPs and set unique server_id
     sudo sed -i 's/bind-address.*/bind-address = 0.0.0.0/' /etc/mysql/mysql.conf.d/mysqld.cnf
     echo "server-id = 1" | sudo tee -a /etc/mysql/mysql.conf.d/mysqld.cnf

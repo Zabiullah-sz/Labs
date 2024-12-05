@@ -3,6 +3,7 @@ import random
 import mysql.connector
 import logging
 import subprocess
+import time
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -20,6 +21,20 @@ WORKER_DBS = [
     {"host": "WORKER1_IP", "user": "root", "password": "password123", "database": "sakila"},
     {"host": "WORKER2_IP", "user": "root", "password": "password123", "database": "sakila"}
 ]
+
+# Benchmark result storage file
+BENCHMARK_FILE = "/tmp/benchmark_proxy_result.txt"
+
+# Store benchmark results
+benchmark_results = {"total_requests": 0, "total_time": 0, "average_time": 0}
+
+# Save benchmark results to a file
+def save_benchmark_to_file():
+    with open(BENCHMARK_FILE, "w") as file:
+        file.write("Proxy Benchmark Results\n")
+        file.write(f"Total Requests: {benchmark_results['total_requests']}\n")
+        file.write(f"Total Time: {benchmark_results['total_time']:.4f} seconds\n")
+        file.write(f"Average Time per Request: {benchmark_results['average_time']:.4f} seconds\n")
 
 # Get the server with the lowest ping time
 def get_fastest_server():
@@ -77,6 +92,9 @@ def route_request():
     mode = data.get("mode", "random").lower()  # Added mode parameter
     logging.info(f"Received request: type={query_type}, mode={mode}, query={query}")
 
+    # Benchmark start time
+    start_time = time.time()
+
     if query_type == "write":
         # All write requests go to the master
         result = execute_query(MASTER_DB, query)
@@ -99,7 +117,21 @@ def route_request():
     else:
         return jsonify({"error": "Invalid query type"}), 400
 
-    return jsonify({"result": result})
+    # Benchmark end time
+    end_time = time.time()
+    request_time = end_time - start_time
+
+    # Update benchmark metrics
+    benchmark_results["total_requests"] += 1
+    benchmark_results["total_time"] += request_time
+    benchmark_results["average_time"] = benchmark_results["total_time"] / benchmark_results["total_requests"]
+
+    # Save updated benchmark results to file
+    save_benchmark_to_file()
+
+    # Log benchmark result
+    logging.info(f"Request time: {request_time:.4f} seconds")
+    return jsonify({"result": result, "time_taken": f"{request_time:.4f} seconds"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

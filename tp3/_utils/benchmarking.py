@@ -1,8 +1,9 @@
 import requests
 import time
+import os
 
 # Logging to a local text file
-log_file = "benchmark_logs.txt"
+log_file = "benchmarks_and_logs/benchmark_logs.txt"
 
 # Function to write logs to a file
 def log_to_file(message):
@@ -75,6 +76,7 @@ def benchmark_gatekeeper(gatekeeper_url, num_requests, read_data, write_data, mo
 
 # Main benchmark function
 def run_benchmark(gatekeeper_url):
+    # Ensure the directory exists
     # Clear the log file
     open(log_file, "w").close()
 
@@ -89,4 +91,4 @@ def run_benchmark(gatekeeper_url):
         benchmark_gatekeeper(gatekeeper_url + "/validate", 5, read_data, write_data, mode)
 
     # Summarize results
-    print("\nBenchmarking completed. Results logged in 'benchmark_logs.txt'.")
+    print("\nBenchmarking completed. Results logged in 'benchmarks_and_logs/benchmark_logs.txt'.")

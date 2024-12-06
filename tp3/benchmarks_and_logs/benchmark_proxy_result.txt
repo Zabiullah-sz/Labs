@@ -1,0 +1,29 @@
+===== Proxy Benchmark Results =====
+
+--- Mode: Direct_hit ---
+Total Requests: 10
+  - Total Read Requests: 5
+  - Total Write Requests: 5
+Total Time Taken: 0.4762 seconds
+Average Time per Request: 0.0476 seconds
+  - Average Time per Write Request: 0.0952 seconds
+  - Average Time per Read Request: 0.0952 seconds
+
+--- Mode: Random ---
+Total Requests: 10
+  - Total Read Requests: 5
+  - Total Write Requests: 5
+Total Time Taken: 0.4567 seconds
+Average Time per Request: 0.0457 seconds
+  - Average Time per Write Request: 0.0913 seconds
+  - Average Time per Read Request: 0.0913 seconds
+
+--- Mode: Customized ---
+Total Requests: 10
+  - Total Read Requests: 5
+  - Total Write Requests: 5
+Total Time Taken: 0.4152 seconds
+Average Time per Request: 0.0415 seconds
+  - Average Time per Write Request: 0.0830 seconds
+  - Average Time per Read Request: 0.0830 seconds
+

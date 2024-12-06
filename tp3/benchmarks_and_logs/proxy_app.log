@@ -1,0 +1,167 @@
+ * Serving Flask app 'proxy_app'
+ * Debug mode: off
+2024-12-06 03:30:17,124 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.44.151:5000
+2024-12-06 03:30:17,124 - INFO - [33mPress CTRL+C to quit[0m
+2024-12-06 03:32:19,780 - INFO - Received request: type=read, mode=direct_hit, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:19,835 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:19,837 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:32:19,837 - INFO - Cluster 172.31.36.193 request time: 0.0569 seconds
+2024-12-06 03:32:19,837 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:19] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:20,929 - INFO - Received request: type=read, mode=direct_hit, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:20,964 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:20,966 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:32:20,967 - INFO - Cluster 172.31.36.193 request time: 0.0372 seconds
+2024-12-06 03:32:20,967 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:20] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:21,097 - INFO - Received request: type=read, mode=direct_hit, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:21,132 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:21,134 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:32:21,134 - INFO - Cluster 172.31.36.193 request time: 0.0371 seconds
+2024-12-06 03:32:21,134 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:21] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:21,231 - INFO - Received request: type=read, mode=direct_hit, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:21,307 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:21,308 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:32:21,309 - INFO - Cluster 172.31.36.193 request time: 0.0780 seconds
+2024-12-06 03:32:21,309 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:21] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:21,443 - INFO - Received request: type=read, mode=direct_hit, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:21,481 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:21,483 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:32:21,483 - INFO - Cluster 172.31.36.193 request time: 0.0397 seconds
+2024-12-06 03:32:21,483 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:21] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:21,610 - INFO - Received request: type=write, mode=direct_hit, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA0');
+2024-12-06 03:32:21,646 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA0');
+2024-12-06 03:32:21,656 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:32:21,657 - INFO - Cluster 172.31.36.193 request time: 0.0463 seconds
+2024-12-06 03:32:21,657 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:21] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:21,751 - INFO - Received request: type=write, mode=direct_hit, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA1');
+2024-12-06 03:32:21,790 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA1');
+2024-12-06 03:32:21,798 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:32:21,798 - INFO - Cluster 172.31.36.193 request time: 0.0469 seconds
+2024-12-06 03:32:21,799 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:21] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:21,918 - INFO - Received request: type=write, mode=direct_hit, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA2');
+2024-12-06 03:32:21,952 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA2');
+2024-12-06 03:32:21,961 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:32:21,962 - INFO - Cluster 172.31.36.193 request time: 0.0437 seconds
+2024-12-06 03:32:21,962 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:21] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:22,055 - INFO - Received request: type=write, mode=direct_hit, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA3');
+2024-12-06 03:32:22,091 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA3');
+2024-12-06 03:32:22,099 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:32:22,099 - INFO - Cluster 172.31.36.193 request time: 0.0441 seconds
+2024-12-06 03:32:22,099 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:22] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:22,223 - INFO - Received request: type=write, mode=direct_hit, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA4');
+2024-12-06 03:32:22,259 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA4');
+2024-12-06 03:32:22,269 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:32:22,269 - INFO - Cluster 172.31.36.193 request time: 0.0463 seconds
+2024-12-06 03:32:22,270 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:22] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:22,370 - INFO - Received request: type=read, mode=random, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:22,370 - INFO - Randomly selected server database: 172.31.43.160
+2024-12-06 03:32:22,415 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:22,420 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:32:22,420 - INFO - Cluster 172.31.43.160 request time: 0.0498 seconds
+2024-12-06 03:32:22,420 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:22] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:22,533 - INFO - Received request: type=read, mode=random, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:22,534 - INFO - Randomly selected server database: 172.31.43.160
+2024-12-06 03:32:22,571 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:22,572 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:32:22,573 - INFO - Cluster 172.31.43.160 request time: 0.0389 seconds
+2024-12-06 03:32:22,573 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:22] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:22,664 - INFO - Received request: type=read, mode=random, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:22,665 - INFO - Randomly selected server database: 172.31.43.160
+2024-12-06 03:32:22,702 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:22,704 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:32:22,704 - INFO - Cluster 172.31.43.160 request time: 0.0396 seconds
+2024-12-06 03:32:22,705 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:22] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:22,839 - INFO - Received request: type=read, mode=random, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:22,839 - INFO - Randomly selected server database: 172.31.34.102
+2024-12-06 03:32:22,887 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:22,893 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33)), (201, 'BOB', 'CHA0', datetime.datetime(2024, 12, 6, 3, 32, 21)), (202, 'BOB', 'CHA1', datetime.datetime(2024, 12, 6, 3, 32, 21))]
+2024-12-06 03:32:22,893 - INFO - Cluster 172.31.34.102 request time: 0.0541 seconds
+2024-12-06 03:32:22,893 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:22] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:22,986 - INFO - Received request: type=read, mode=random, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:22,986 - INFO - Randomly selected server database: 172.31.34.102
+2024-12-06 03:32:23,025 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:23,026 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33)), (201, 'BOB', 'CHA0', datetime.datetime(2024, 12, 6, 3, 32, 21)), (202, 'BOB', 'CHA1', datetime.datetime(2024, 12, 6, 3, 32, 21))]
+2024-12-06 03:32:23,027 - INFO - Cluster 172.31.34.102 request time: 0.0403 seconds
+2024-12-06 03:32:23,027 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:23] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:23,158 - INFO - Received request: type=write, mode=random, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA0');
+2024-12-06 03:32:23,196 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA0');
+2024-12-06 03:32:23,206 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:32:23,206 - INFO - Cluster 172.31.36.193 request time: 0.0477 seconds
+2024-12-06 03:32:23,206 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:23] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:23,290 - INFO - Received request: type=write, mode=random, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA1');
+2024-12-06 03:32:23,327 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA1');
+2024-12-06 03:32:23,336 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:32:23,336 - INFO - Cluster 172.31.36.193 request time: 0.0461 seconds
+2024-12-06 03:32:23,337 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:23] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:23,458 - INFO - Received request: type=write, mode=random, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA2');
+2024-12-06 03:32:23,498 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA2');
+2024-12-06 03:32:23,507 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:32:23,507 - INFO - Cluster 172.31.36.193 request time: 0.0488 seconds
+2024-12-06 03:32:23,508 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:23] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:23,591 - INFO - Received request: type=write, mode=random, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA3');
+2024-12-06 03:32:23,627 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA3');
+2024-12-06 03:32:23,636 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:32:23,636 - INFO - Cluster 172.31.36.193 request time: 0.0451 seconds
+2024-12-06 03:32:23,636 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:23] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:23,758 - INFO - Received request: type=write, mode=random, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA4');
+2024-12-06 03:32:23,796 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA4');
+2024-12-06 03:32:23,804 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:32:23,804 - INFO - Cluster 172.31.36.193 request time: 0.0461 seconds
+2024-12-06 03:32:23,805 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:23] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:23,907 - INFO - Received request: type=read, mode=customized, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:53,917 - INFO - Selected server database based on ping: 172.31.43.160
+2024-12-06 03:32:53,954 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:32:53,956 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:32:53,956 - INFO - Cluster 172.31.43.160 request time: 0.0383 seconds
+2024-12-06 03:32:53,957 - INFO - 172.31.42.119 - - [06/Dec/2024 03:32:53] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:32:54,096 - INFO - Received request: type=read, mode=customized, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:33:24,102 - INFO - Selected server database based on ping: 172.31.43.160
+2024-12-06 03:33:24,139 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:33:24,140 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:33:24,141 - INFO - Cluster 172.31.43.160 request time: 0.0384 seconds
+2024-12-06 03:33:24,141 - INFO - 172.31.42.119 - - [06/Dec/2024 03:33:24] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:33:24,226 - INFO - Received request: type=read, mode=customized, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:33:54,231 - INFO - Selected server database based on ping: 172.31.36.193
+2024-12-06 03:33:54,268 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:33:54,270 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33)), (201, 'BOB', 'CHA0', datetime.datetime(2024, 12, 6, 3, 32, 21)), (202, 'BOB', 'CHA1', datetime.datetime(2024, 12, 6, 3, 32, 21))]
+2024-12-06 03:33:54,270 - INFO - Cluster 172.31.36.193 request time: 0.0385 seconds
+2024-12-06 03:33:54,271 - INFO - 172.31.42.119 - - [06/Dec/2024 03:33:54] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:33:54,383 - INFO - Received request: type=read, mode=customized, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:34:24,389 - INFO - Selected server database based on ping: 172.31.43.160
+2024-12-06 03:34:24,424 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:34:24,426 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:34:24,426 - INFO - Cluster 172.31.43.160 request time: 0.0370 seconds
+2024-12-06 03:34:24,426 - INFO - 172.31.42.119 - - [06/Dec/2024 03:34:24] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:34:24,523 - INFO - Received request: type=read, mode=customized, query=SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:34:54,529 - INFO - Selected server database based on ping: 172.31.43.160
+2024-12-06 03:34:54,567 - INFO - Executing query: SELECT * FROM actor WHERE first_name = 'BOB' LIMIT 3;
+2024-12-06 03:34:54,568 - INFO - Query executed successfully, result: [(19, 'BOB', 'FAWCETT', datetime.datetime(2006, 2, 15, 4, 34, 33))]
+2024-12-06 03:34:54,569 - INFO - Cluster 172.31.43.160 request time: 0.0388 seconds
+2024-12-06 03:34:54,569 - INFO - 172.31.42.119 - - [06/Dec/2024 03:34:54] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:34:54,699 - INFO - Received request: type=write, mode=customized, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA0');
+2024-12-06 03:34:54,735 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA0');
+2024-12-06 03:34:54,741 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:34:54,742 - INFO - Cluster 172.31.36.193 request time: 0.0427 seconds
+2024-12-06 03:34:54,742 - INFO - 172.31.42.119 - - [06/Dec/2024 03:34:54] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:34:54,840 - INFO - Received request: type=write, mode=customized, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA1');
+2024-12-06 03:34:54,876 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA1');
+2024-12-06 03:34:54,884 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:34:54,884 - INFO - Cluster 172.31.36.193 request time: 0.0434 seconds
+2024-12-06 03:34:54,884 - INFO - 172.31.42.119 - - [06/Dec/2024 03:34:54] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:34:55,007 - INFO - Received request: type=write, mode=customized, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA2');
+2024-12-06 03:34:55,046 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA2');
+2024-12-06 03:34:55,056 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:34:55,057 - INFO - Cluster 172.31.36.193 request time: 0.0498 seconds
+2024-12-06 03:34:55,057 - INFO - 172.31.42.119 - - [06/Dec/2024 03:34:55] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:34:55,143 - INFO - Received request: type=write, mode=customized, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA3');
+2024-12-06 03:34:55,179 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA3');
+2024-12-06 03:34:55,186 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:34:55,187 - INFO - Cluster 172.31.36.193 request time: 0.0429 seconds
+2024-12-06 03:34:55,187 - INFO - 172.31.42.119 - - [06/Dec/2024 03:34:55] "POST /query HTTP/1.1" 200 -
+2024-12-06 03:34:55,312 - INFO - Received request: type=write, mode=customized, query=INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA4');
+2024-12-06 03:34:55,349 - INFO - Executing query: INSERT INTO actor (first_name, last_name) VALUES ('BOB', 'CHA4');
+2024-12-06 03:34:55,357 - INFO - Query executed successfully, result: {'affected_rows': 1}
+2024-12-06 03:34:55,358 - INFO - Cluster 172.31.36.193 request time: 0.0454 seconds
+2024-12-06 03:34:55,358 - INFO - 172.31.42.119 - - [06/Dec/2024 03:34:55] "POST /query HTTP/1.1" 200 -

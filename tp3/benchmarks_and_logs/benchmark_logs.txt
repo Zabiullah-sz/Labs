@@ -1,0 +1,84 @@
+
+Benchmarking 'direct_hit' mode...
+Request 0: Status Code: 200
+Response: {'cluster_time_taken': '0.0569 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 1: Status Code: 200
+Response: {'cluster_time_taken': '0.0372 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 2: Status Code: 200
+Response: {'cluster_time_taken': '0.0371 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 3: Status Code: 200
+Response: {'cluster_time_taken': '0.0780 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 4: Status Code: 200
+Response: {'cluster_time_taken': '0.0397 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 5: Status Code: 200
+Response: {'cluster_time_taken': '0.0463 seconds', 'result': {'affected_rows': 1}}
+Request 6: Status Code: 200
+Response: {'cluster_time_taken': '0.0469 seconds', 'result': {'affected_rows': 1}}
+Request 7: Status Code: 200
+Response: {'cluster_time_taken': '0.0437 seconds', 'result': {'affected_rows': 1}}
+Request 8: Status Code: 200
+Response: {'cluster_time_taken': '0.0441 seconds', 'result': {'affected_rows': 1}}
+Request 9: Status Code: 200
+Response: {'cluster_time_taken': '0.0463 seconds', 'result': {'affected_rows': 1}}
+
+Results for mode 'direct_hit':
+Total time taken: 2.66 seconds
+Average time per read: 0.3741 seconds
+Average time per write: 0.1578 seconds
+Average time per request: 0.2660 seconds
+
+Benchmarking 'random' mode...
+Request 0: Status Code: 200
+Response: {'cluster_time_taken': '0.0498 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 1: Status Code: 200
+Response: {'cluster_time_taken': '0.0389 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 2: Status Code: 200
+Response: {'cluster_time_taken': '0.0396 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 3: Status Code: 200
+Response: {'cluster_time_taken': '0.0541 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT'], [201, 'BOB', 'CHA0', 'Fri, 06 Dec 2024 03:32:21 GMT'], [202, 'BOB', 'CHA1', 'Fri, 06 Dec 2024 03:32:21 GMT']]}
+Request 4: Status Code: 200
+Response: {'cluster_time_taken': '0.0403 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT'], [201, 'BOB', 'CHA0', 'Fri, 06 Dec 2024 03:32:21 GMT'], [202, 'BOB', 'CHA1', 'Fri, 06 Dec 2024 03:32:21 GMT']]}
+Request 5: Status Code: 200
+Response: {'cluster_time_taken': '0.0477 seconds', 'result': {'affected_rows': 1}}
+Request 6: Status Code: 200
+Response: {'cluster_time_taken': '0.0461 seconds', 'result': {'affected_rows': 1}}
+Request 7: Status Code: 200
+Response: {'cluster_time_taken': '0.0488 seconds', 'result': {'affected_rows': 1}}
+Request 8: Status Code: 200
+Response: {'cluster_time_taken': '0.0451 seconds', 'result': {'affected_rows': 1}}
+Request 9: Status Code: 200
+Response: {'cluster_time_taken': '0.0461 seconds', 'result': {'affected_rows': 1}}
+
+Results for mode 'random':
+Total time taken: 1.53 seconds
+Average time per read: 0.1501 seconds
+Average time per write: 0.1565 seconds
+Average time per request: 0.1533 seconds
+
+Benchmarking 'customized' mode...
+Request 0: Status Code: 200
+Response: {'cluster_time_taken': '0.0383 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 1: Status Code: 200
+Response: {'cluster_time_taken': '0.0384 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 2: Status Code: 200
+Response: {'cluster_time_taken': '0.0385 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT'], [201, 'BOB', 'CHA0', 'Fri, 06 Dec 2024 03:32:21 GMT'], [202, 'BOB', 'CHA1', 'Fri, 06 Dec 2024 03:32:21 GMT']]}
+Request 3: Status Code: 200
+Response: {'cluster_time_taken': '0.0370 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 4: Status Code: 200
+Response: {'cluster_time_taken': '0.0388 seconds', 'result': [[19, 'BOB', 'FAWCETT', 'Wed, 15 Feb 2006 04:34:33 GMT']]}
+Request 5: Status Code: 200
+Response: {'cluster_time_taken': '0.0427 seconds', 'result': {'affected_rows': 1}}
+Request 6: Status Code: 200
+Response: {'cluster_time_taken': '0.0434 seconds', 'result': {'affected_rows': 1}}
+Request 7: Status Code: 200
+Response: {'cluster_time_taken': '0.0498 seconds', 'result': {'affected_rows': 1}}
+Request 8: Status Code: 200
+Response: {'cluster_time_taken': '0.0429 seconds', 'result': {'affected_rows': 1}}
+Request 9: Status Code: 200
+Response: {'cluster_time_taken': '0.0454 seconds', 'result': {'affected_rows': 1}}
+
+Results for mode 'customized':
+Total time taken: 151.57 seconds
+Average time per read: 30.1543 seconds
+Average time per write: 0.1592 seconds
+Average time per request: 15.1567 seconds

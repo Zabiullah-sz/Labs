@@ -26,15 +26,77 @@ WORKER_DBS = [
 BENCHMARK_FILE = "/tmp/benchmark_proxy_result.txt"
 
 # Store benchmark results
-benchmark_results = {"total_requests": 0, "total_time": 0, "average_time": 0}
+benchmark_all_results = {
+    "direct_hit": {
+        "total_requests": 0,
+        "total_read_requests": 0,
+        "total_write_requests": 0,
+        "total_time": 0,
+        "average_time": 0,
+    },
+    "random": {
+        "total_requests": 0,
+        "total_read_requests": 0,
+        "total_write_requests": 0,
+        "total_time": 0,
+        "average_time": 0,
+    },
+    "customized": {
+        "total_requests": 0,
+        "total_read_requests": 0,
+        "total_write_requests": 0,
+        "total_time": 0,
+        "average_time": 0,
+    },
+}
 
-# Save benchmark results to a file
+
 def save_benchmark_to_file():
+    """
+    Save the current benchmarking results for all modes to a file in a formatted way.
+    """
     with open(BENCHMARK_FILE, "w") as file:
-        file.write("Proxy Benchmark Results\n")
-        file.write(f"Total Requests: {benchmark_results['total_requests']}\n")
-        file.write(f"Total Time: {benchmark_results['total_time']:.4f} seconds\n")
-        file.write(f"Average Time per Request: {benchmark_results['average_time']:.4f} seconds\n")
+        file.write("===== Proxy Benchmark Results =====\n\n")
+        for mode, data in benchmark_all_results.items():
+            file.write(f"--- Mode: {mode.capitalize()} ---\n")
+            file.write(f"Total Requests: {data['total_requests']}\n")
+            file.write(f"  - Total Read Requests: {data['total_read_requests']}\n")
+            file.write(f"  - Total Write Requests: {data['total_write_requests']}\n")
+            file.write(f"Total Time Taken: {data['total_time']:.4f} seconds\n")
+            file.write(f"Average Time per Request: {data['average_time']:.4f} seconds\n")
+            if data['total_write_requests'] > 0:
+                avg_write_time = data['total_time'] / data['total_write_requests']
+                file.write(f"  - Average Time per Write Request: {avg_write_time:.4f} seconds\n")
+            if data['total_read_requests'] > 0:
+                avg_read_time = data['total_time'] / data['total_read_requests']
+                file.write(f"  - Average Time per Read Request: {avg_read_time:.4f} seconds\n")
+            file.write("\n")
+
+
+def update_benchmark(mode, query_type, cluster_request_time):
+    """
+    Update the benchmark statistics for a specific mode and query type.
+
+    Parameters:
+        mode (str): The mode of operation (e.g., direct_hit, random, customized).
+        query_type (str): The type of query (read or write).
+        cluster_request_time (float): Time taken for the cluster to respond.
+    """
+    data = benchmark_all_results[mode]
+    data["total_requests"] += 1
+    data["total_time"] += cluster_request_time
+
+    # Update specific counters
+    if query_type == "read":
+        data["total_read_requests"] += 1
+    elif query_type == "write":
+        data["total_write_requests"] += 1
+
+    # Recalculate average time
+    data["average_time"] = data["total_time"] / data["total_requests"]
+
+    # Save the updated benchmark to the file
+    save_benchmark_to_file()
 
 # Get the server with the lowest ping time
 def get_fastest_server():
@@ -83,7 +145,6 @@ def execute_query(db_config, query):
     except mysql.connector.Error as err:
         logging.error(f"Error: {err}")
         return {"error": str(err)}
-
 @app.route('/query', methods=['POST'])
 def route_request():
     data = request.get_json()
@@ -92,46 +153,50 @@ def route_request():
     mode = data.get("mode", "random").lower()  # Added mode parameter
     logging.info(f"Received request: type={query_type}, mode={mode}, query={query}")
 
-    # Benchmark start time
-    start_time = time.time()
+    server_db = None  # Initialize server database configuration
 
     if query_type == "write":
         # All write requests go to the master
-        result = execute_query(MASTER_DB, query)
+        server_db = MASTER_DB
     elif query_type == "read":
         if mode == "direct_hit":
             # Direct Hit: All read requests go to the master
-            result = execute_query(MASTER_DB, query)
+            server_db = MASTER_DB
         elif mode == "random":
             # Random mode: Randomly select any server
             server_db = random.choice(WORKER_DBS)
             logging.info(f"Randomly selected server database: {server_db['host']}")
-            result = execute_query(server_db, query)
         elif mode == "customized":
             # Customized mode: Choose the fastest server based on ping
             server_db = get_fastest_server()
             logging.info(f"Selected server database based on ping: {server_db['host']}")
-            result = execute_query(server_db, query)
         else:
             return jsonify({"error": "Invalid mode"}), 400
     else:
         return jsonify({"error": "Invalid query type"}), 400
 
-    # Benchmark end time
-    end_time = time.time()
-    request_time = end_time - start_time
+    # Benchmark cluster start time (ONLY for the query execution)
+    cluster_start_time = time.time()
 
-    # Update benchmark metrics
-    benchmark_results["total_requests"] += 1
-    benchmark_results["total_time"] += request_time
-    benchmark_results["average_time"] = benchmark_results["total_time"] / benchmark_results["total_requests"]
+    # Execute the query on the selected server
+    result = execute_query(server_db, query)
 
-    # Save updated benchmark results to file
-    save_benchmark_to_file()
+    # Benchmark cluster end time
+    cluster_end_time = time.time()
 
-    # Log benchmark result
-    logging.info(f"Request time: {request_time:.4f} seconds")
-    return jsonify({"result": result, "time_taken": f"{request_time:.4f} seconds"})
+    # Calculate the cluster request time
+    cluster_request_time = cluster_end_time - cluster_start_time
+
+    # Update benchmarking metrics
+    update_benchmark(mode, query_type, cluster_request_time)
+
+    # Log the cluster-specific benchmark result
+    logging.info(f"Cluster {server_db['host']} request time: {cluster_request_time:.4f} seconds")
+    return jsonify({
+        "result": result,
+        "cluster_time_taken": f"{cluster_request_time:.4f} seconds"
+    })
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
